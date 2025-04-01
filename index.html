@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Smart Irrigation Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: rgb(241, 238, 238);
+      }
+
+      .header {
+        background-color: #4285f4;
+        color: rgb(241, 255, 243);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 50px;
+        font-size: 24px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+        font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+        position: sticky;
+        top: 0px;
+        z-index: 999;
+        width: 100%;
+        height: auto;
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 20px;
+        justify-content: center;
+      }
+
+      .card {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin: 20px;
+        min-height: 215px;
+        min-width: 175px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .card:hover {
+        box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .moisture-gauge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+      }
+
+      .gauge-container {
+        position: relative;
+        width: 100%;
+        padding-top: 100%;
+        margin-bottom: 20px;
+      }
+
+      .gauge {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: #eee;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+        transform: rotate(-135deg);
+        overflow: hidden;
+      }
+
+      .gauge:after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 70%;
+        height: 70%;
+        background-color: #4285f4;
+        border-radius: 50%;
+        box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .gauge-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 30px;
+        font-weight: bold;
+        color: #ffffff;
+        z-index: 1;
+      }
+
+      .gauge-label {
+        font-size: 18px;
+        font-weight: bold;
+        color: #777;
+      }
+
+      .segment-control {
+        display: flex;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #ddd;
+        margin: auto;
+      }
+
+      .segment-control label {
+        flex: 1;
+        padding: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .segment-control label:hover {
+        background-color: #ccc;
+      }
+
+      .segment-control input[type="radio"] {
+        display: none;
+      }
+
+      .segment-control input[type="radio"]:checked + label {
+        background-color: #4285f4;
+        color: #fff;
+      }
+
+      .segment-label {
+        font-size: 18px;
+        font-weight: bold;
+        color: #777;
+      }
+
+      .image-container {
+        padding: 5px;
+      }
+
+      .card-image {
+        max-height: 150px;
+      }
+
+      .toggle {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        margin: auto;
+        background-color: #ccc;
+        border-radius: 34px;
+        cursor: pointer;
+      }
+
+      .toggle input {
+        display: none;
+      }
+
+      .slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #609dff;
+        border-radius: 34px;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
+        transition: all 0.3s ease-in-out;
+      }
+
+      .slider:before {
+        content: "";
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        width: 22px;
+        height: 22px;
+        background-color: rgb(255, 255, 255);
+        border-radius: 50%;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
+        transition: all 0.3s ease-in-out;
+      }
+
+      input:checked + .slider {
+        background-color: #4285f4;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(26px);
+        background-color: #fff;
+      }
+
+      .toggle-label {
+        margin-top: 8px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">Smart Irrigation System</div>
+    <div class="container">
+      <div class="card">
+        <div class="gauge-container">
+          <div class="gauge" style="--value: 50"></div>
+          <div class="gauge-value">50%</div>
+        </div>
+        <div class="gauge-label">Moisture Level</div>
+      </div>
+      <div class="card">
+        <div class="segment-control">
+          <input type="radio" id="OFF" name="segments" checked />
+          <label for="OFF">Off</label>
+          <input type="radio" id="AUTO" name="segments" />
+          <label for="AUTO">Auto</label>
+          <input type="radio" id="ON" name="segments" />
+          <label for="ON">On</label>
+        </div>
+        <div class="segment-label">Switch Status</div>
+      </div>
+      <div class="card">
+        <div class="image-container">
+          <img class="card-image" id="soil-status" src="./cactus.jpg" />
+        </div>
+        <div class="segment-label">Soil Status</div>
+      </div>
+      <div class="card">
+        <label class="toggle">
+          <input type="checkbox" />
+          <span class="slider"></span>
+        </label>
+        <div class="segment-label">Pump Status</div>
+      </div>
+    </div>
+  </body>
+  <script>
+    const url = "http://192.168.4.1";
+    const moistureValue = document.querySelector("div.gauge-value");
+    const segmentControl = document.querySelector(".segment-control");
+    const soilStatus = document.querySelector("#soil-status");
+
+    const getMoistureLevel = () => {
+      const xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+          const moisture = JSON.parse(this.responseText).moisture;
+          const percent = Math.round((1 - moisture / 1024) * 100);
+          moistureValue.innerHTML = `${percent}%`;
+        }
+      };
+      xhr.open("GET", `${url}/getMoistureState`);
+      xhr.send();
+    };
+    setInterval(getMoistureLevel, 1000);
+
+    segmentControl.addEventListener("change", () => {
+      const checkedInput = document.querySelector(
+        'input[name="segments"]:checked'
+      );
+      const checkedId = checkedInput.id;
+      const xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+          console.log(`sent : ${checkedId}`);
+        }
+      };
+      xhr.open("GET", `${url}/setSwitchState?state=${checkedId}`, true);
+      xhr.send();
+    });
+
+    const getSoilState = () => {
+      const xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+          const soil = JSON.parse(this.responseText).soil;
+          switch (soil) {
+            case "DRY":
+              soilStatus.setAttribute("src", "./cactus.jpg");
+              break;
+            case "PERFECT":
+              soilStatus.setAttribute("src", "./green_plant.jpg");
+              break;
+            case "WET":
+              break;
+            default:
+              break;
+          }
+        }
+      };
+      xhr.open("GET", `${url}/getSoilState`);
+      xhr.send();
+    };
+    setInterval(getSoilState, 1000);
+  </script>
+</html>

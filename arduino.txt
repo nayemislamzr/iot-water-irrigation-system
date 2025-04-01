@@ -1,0 +1,138 @@
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+
+enum SOIL {
+  WET,
+  PERFECT,
+  DRY
+};
+
+enum MOTOR_SWITCH {
+  OFF,
+  AUTO,
+  ON    
+};
+
+// pins
+int D_MOIS_SENSOR = 3; // RX pin on ESP8266
+int A_MOIS_SENSOR = A0;
+int LED = D1;
+int RELAY = D2;
+int WIFI_INDCTR = D3;
+int SWITCH = D5;
+
+// variables
+char ssid[] = "nayemIOT";
+char password[] = "12345678";
+int moisture = 0;
+MOTOR_SWITCH motorSwitch = OFF; 
+String soil = "UNKNOWN";
+
+int soilWet = 500;
+int soilDry = 750;
+
+ESP8266WebServer server(80);
+
+void handleRoot() {
+  String html = "<!DOCTYPE html><html><head><title>Control Relay</title></head><body>Hello World!</body></html>";
+  server.send(200, "text/html", html);
+}
+
+void handleSetSwitchState() {
+  String state = server.arg("state");
+  Serial.println(state);  
+  if (state == "ON")
+    motorSwitch = ON;
+  else if (state == "AUTO")
+    motorSwitch = AUTO;
+  else if (state == "OFF")
+    motorSwitch = OFF;
+  else {
+    // do nothing
+  }
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "application/json", "{\"status\" : \"ok\"}");
+}
+
+void handleGetMoistureState() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  char buffer[50];
+  sprintf(buffer, "{\"moisture\" : %d}", moisture);
+  server.send(200, "application/json", buffer);
+}
+
+void handleGetSoilState() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  char buffer[50];
+  sprintf(buffer, "{\"soil\" : \"%s\"}", soil);
+  server.send(200, "application/json", buffer);  
+}
+
+SOIL determineSoilStatus(int moisture) {
+    if (moisture > soilDry)
+      return DRY;
+    else if (moisture >= soilWet && moisture <= soilDry)
+      return PERFECT;
+    else 
+      return WET;
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  // Serial.begin(115200);
+  pinMode(D_MOIS_SENSOR, INPUT);
+  pinMode(A_MOIS_SENSOR, INPUT);
+  
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
+  
+  pinMode(RELAY, OUTPUT);
+  digitalWrite(RELAY, HIGH);
+  
+  pinMode(WIFI_INDCTR, OUTPUT);
+  digitalWrite(WIFI_INDCTR, LOW);  
+  
+  pinMode(SWITCH, OUTPUT);
+  digitalWrite(SWITCH, LOW);
+
+  // setting up wifi
+  WiFi.softAP(ssid, password);
+  IPAddress myIP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(myIP);
+  server.on("/", handleRoot);
+  server.on("/getMoistureState",handleGetMoistureState);
+  server.on("/setSwitchState",handleSetSwitchState);
+  server.on("/getSoilState",handleGetSoilState);
+  server.begin();     
+}
+
+void loop() {
+  
+  moisture = analogRead(A_MOIS_SENSOR);
+  SOIL status = determineSoilStatus(moisture);
+  switch (status) {
+    case WET:
+      digitalWrite(LED, LOW);
+      digitalWrite(RELAY, LOW);
+      soil = "WET";      
+      break;
+    case DRY:
+      digitalWrite(LED, HIGH);
+      digitalWrite(RELAY, HIGH);
+      soil = "DRY";
+      break;
+    case PERFECT:
+      soil = "PERFECT"; 
+      break;   
+    default:
+      break;            
+  }  
+  
+  // handle WEB Server requests
+  server.handleClient();
+  
+  delay(100);
+}
